@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Info Book 📖</title>
+<style>
+body {
+  margin: 0;
+  font-family: "Poppins", sans-serif;
+  background: linear-gradient(135deg, #8b0000, #330000);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+}
+.book {
+  width: 420px;
+  height: 520px;
+  perspective: 1500px;
+  position: relative;
+}
+.page {
+  width: 100%;
+  height: 100%;
+  background: #1a1a1a;
+  border-radius: 10px;
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 20px;
+  box-sizing: border-box;
+  transform-origin: left;
+  transform-style: preserve-3d;
+  transition: transform 1s;
+  box-shadow: 0 0 20px rgba(255, 0, 0, 0.5);
+}
+.page h2 {
+  text-align: center;
+  color: #ff5555;
+  margin-bottom: 10px;
+}
+label {
+  display: block;
+  margin-top: 6px;
+}
+input, textarea {
+  width: 100%;
+  padding: 8px;
+  margin: 6px 0;
+  border: none;
+  border-radius: 5px;
+  background: #333;
+  color: white;
+  resize: none;
+}
+button {
+  background: #ff4444;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 6px;
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  margin: 5px;
+}
+button:hover {
+  background: #ff6666;
+}
+.page.flipped {
+  transform: rotateY(-180deg);
+}
+.page img {
+  width: 100px;
+  height: 100px;
+  object-fit: cover;
+  border-radius: 50%;
+  display: block;
+  margin: 10px auto;
+  border: 3px solid #ff4444;
+}
+</style>
+</head>
+<body>
+<div class="book" id="book"></div>
+
+<audio id="flipSound">
+  <source src="https://www.soundjay.com/books/page-flip-4.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+const book = document.getElementById('book');
+const flipSound = document.getElementById('flipSound');
+
+// 10 practical student info pages
+let pagesData = [
+  { title: "Basic Info", fields: ["Full Name", "Roll Number", "PRN Number", "Gender", "Date of Birth"] },
+  { title: "Contact Info", fields: ["Mobile Number", "Email", "Address", "City", "State"] },
+  { title: "Family Info", fields: ["Father's Name", "Mother's Name", "Parent Contact", "Parent Occupation"] },
+  { title: "10th Education", fields: ["10th School Name", "Board", "Percentage", "Passing Year"] },
+  { title: "12th Education", fields: ["12th College Name", "Board", "Percentage", "Passing Year"] },
+  { title: "Graduation Info", fields: ["Degree College", "Course / Stream", "Current Year", "CGPA"] },
+  { title: "Skills", fields: ["Technical Skills", "Soft Skills", "Languages Known"] },
+  { title: "Projects", fields: ["Project Title", "Technology Used", "Project Description"] },
+  { title: "Achievements", fields: ["Awards", "Certificates", "Hobbies", "Interests"] },
+  { title: "Final Page", fields: ["Photo Upload", "Signature / Note"] }
+];
+
+function createPages() {
+  pagesData.forEach((data, i) => {
+    let page = document.createElement('div');
+    page.className = 'page';
+    page.style.zIndex = pagesData.length - i;
+
+    let html = <h2>${data.title}</h2>;
+
+    data.fields.forEach(field => {
+      if (field === "Photo Upload") {
+        html += `
+          <label>${field}</label>
+          <input type="file" accept="image/*" id="photo${i}" onchange="previewPhoto(this, ${i})">
+          <img id="img${i}" src="" alt="">
+        `;
+      } else if (field === "Signature / Note") {
+        const id = field.replace(/\s+/g, '_').toLowerCase();
+        const saved = localStorage.getItem(id) || "";
+        html += `<label>${field}</label>
+                 <textarea id="${id}" rows="3" oninput="saveData('${id}', this.value)">${saved}</textarea>`;
+      } else {
+        const id = field.replace(/\s+/g, '_').toLowerCase();
+        const saved = localStorage.getItem(id) || "";
+        html += `<label>${field}</label>
+                 <input type="text" id="${id}" value="${saved}" oninput="saveData('${id}', this.value)">`;
+      }
+    });
+
+    html += <div style="text-align:center">;
+    if (i > 0) html += <button onclick="prevPage(${i})">⬅ Back</button>;
+    if (i < pagesData.length - 1) html += <button onclick="nextPage(${i})">Next ➡</button>;
+    if (i === pagesData.length - 1)
+      html += <button onclick="saveAll()">💾 Save All Info</button>;
+    html += </div>;
+
+    page.innerHTML = html;
+    book.appendChild(page);
+  });
+}
+
+function saveData(id, value) {
+  localStorage.setItem(id, value);
+}
+
+function previewPhoto(input, i) {
+  const file = input.files[0];
+  if (file) {
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById("img" + i).src = e.target.result;
+      localStorage.setItem("photo" + i, e.target.result);
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function loadPhotos() {
+  pagesData.forEach((_, i) => {
+    const imgData = localStorage.getItem("photo" + i);
+    if (imgData) {
+      const img = document.getElementById("img" + i);
+      if (img) img.src = imgData;
+    }
+  });
+}
+
+function nextPage(i) {
+  const pages = document.querySelectorAll('.page');
+  pages[i].classList.add('flipped');
+  flipSound.currentTime = 0;
+  flipSound.play();
+}
+
+function prevPage(i) {
+  const pages = document.querySelectorAll('.page');
+  pages[i - 1].classList.remove('flipped');
+  flipSound.currentTime = 0;
+  flipSound.play();
+}
+
+function saveAll() {
+  alert("✅ All student information has been saved successfully!");
+}
+
+createPages();
+setTimeout(loadPhotos, 1000);
+</script>
+</body>
+</html>
